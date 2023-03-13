@@ -76,6 +76,8 @@ Check out generated Javadoc at [http://crabhi.github.io/celery-java/apidocs/](ht
 2. Run `Worker` with your tasks on classpath. You can directly use the `Worker` class or embed it into your `main`
 function.
 
+    #### Using Rabbitmq broker
+
     ```java
     import com.geneea.celery.CeleryWorker;
 
@@ -85,9 +87,25 @@ function.
         }
     }
     ```
+    
+    #### Using Redis broker
+
+    ```java
+    import com.geneea.celery.CeleryWorker;
+
+    public class MyWorker {
+        public static void main(String[] args) throws Exception {
+            RedisWorker.main(args);
+        }
+    }
+    ```
 
 3. From the Python side, call the task by the class name hash (`#`) method name.
 
+    For changing broker and backend, simply change the "broker" and "backend":
+- #### Rabbitmq: app = celery.Celery(broker="amqp://localhost/", backend="rpc://localhost")
+- #### Redis: app = celery.Celery(broker="redis://localhost:6379/", backend="redis://localhost:6379/")
+    
     ```python
     In [1]: import celery
 
@@ -108,15 +126,28 @@ function.
 
 2. Call the task by name.
 
-```java
-Celery client = Celery.builder()
-        .brokerUri("amqp://localhost/%2F")
-        .backendUri("rpc://localhost/%2F")
-        .build();
+    #### Using Rabbitmq broker
 
-System.out.println(client.submit("tasks.add", new Object[]{1, 2}).get());
-```
+    ```java
+    Celery client = Celery.builder()
+            .brokerUri("amqp://localhost/%2F")
+            .backendUri("rpc://localhost/%2F")
+            .build();
+    
+    System.out.println(client.submit("tasks.add", new Object[]{1, 2}).get());
+    ```
+   
+    #### Using Redis broker
 
+    ```java
+    Celery client = Celery.builder()
+                .brokerUri("redis://localhost:6379/")
+                .backendUri("redis://localhost:6379/")
+                .build();
+    
+    System.out.println(client.submit("tasks.add", new Object[]{1, 2}).get());
+    ```
+       
 ## Calling Java task from Java
 
 The `@CeleryTask` annotation on a class `MyClass` causes `MyClassProxy` and `MyClassLoader` to be generated.
@@ -125,11 +156,24 @@ now return a `Future<...>` instead of the original type.
 
 To use the proxy, you need a Celery `Client`.
 
+#### Using Rabbitmq broker
+
 ```java
 Celery client = Celery.builder()
-        .brokerUri("amqp://localhost/%2F")
-        .backendUri("rpc://localhost/%2F")
-        .build();
+            .brokerUri("amqp://localhost/%2F")
+            .backendUri("rpc://localhost/%2F")
+            .build();
+    
+    Integer result = TestTaskProxy.with(client).sum(1, 7).get();
+```
+
+#### Using Redis broker
+
+```java
+Celery client = Celery.builder()
+            .brokerUri("redis://localhost:6379/")
+            .backendUri("redis://localhost:6379/")
+            .build();
 
 Integer result = TestTaskProxy.with(client).sum(1, 7).get();
 ```
